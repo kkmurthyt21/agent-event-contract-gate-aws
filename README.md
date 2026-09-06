@@ -4,6 +4,12 @@ This sample prevents malformed, incompatible, and duplicate AI-agent events from
 reaching downstream consumers. A Lambda contract gate validates a versioned
 CloudEvents-style envelope before publishing it to a custom Amazon EventBridge bus.
 
+## Published article
+
+[Prevent Silent Failures Between AI Agents with Versioned Event Contracts on AWS](https://builder.aws.com/content/3Ivtw3UhZxxl2vzO4z293iDjLlL/prevent-silent-failures-between-ai-agents-with-versioned-event-contracts-on-aws)
+
+## What the sample proves
+
 ## What the sample proves
 
 | Scenario | Expected outcome |
