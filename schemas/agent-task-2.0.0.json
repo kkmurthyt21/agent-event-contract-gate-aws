@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.org/schemas/agent-task-2.0.0.json",
+  "title": "Agent task event 2.0.0 - intentionally breaking",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["specversion", "id", "source", "type", "time", "datacontenttype", "dataschema", "data"],
+  "properties": {
+    "specversion": {"type": "string", "const": "1.0"},
+    "id": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "type": {"type": "string", "const": "com.example.agent.task.created"},
+    "time": {"type": "string", "format": "date-time"},
+    "datacontenttype": {"type": "string", "const": "application/json"},
+    "dataschema": {"type": "string", "const": "agent-task/2.0.0"},
+    "subject": {"type": "string", "minLength": 1},
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "correlationId", "idempotencyKey", "workItemId", "task"],
+      "properties": {
+        "schemaVersion": {"type": "string", "const": "2.0.0"},
+        "correlationId": {"type": "string", "minLength": 1},
+        "idempotencyKey": {"type": "string", "minLength": 1},
+        "workItemId": {"type": "string", "minLength": 1},
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "input"],
+          "properties": {
+            "action": {"type": "string", "enum": ["summarize", "classify", "extract"]},
+            "input": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}

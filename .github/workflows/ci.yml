@@ -1,0 +1,29 @@
+name: contract-tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python
+        run: python -m compileall -q gate executor scripts tests
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Accept compatible schema update
+        run: python scripts/check_compatibility.py schemas/agent-task-1.0.0.json schemas/agent-task-1.1.0.json
+      - name: Block intentionally breaking schema update
+        run: |
+          if python scripts/check_compatibility.py schemas/agent-task-1.0.0.json schemas/agent-task-2.0.0.json; then
+            echo "Expected the v2 schema check to fail"
+            exit 1
+          fi

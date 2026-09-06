@@ -1,0 +1,20 @@
+{
+  "specversion": "1.0",
+  "id": "event-2001",
+  "source": "urn:sample:planner-v2",
+  "type": "com.example.agent.task.created",
+  "time": "2026-09-05T18:02:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "agent-task/2.0.0",
+  "subject": "work-item-2001",
+  "data": {
+    "schemaVersion": "2.0.0",
+    "correlationId": "conversation-9003",
+    "idempotencyKey": "work-item-2001-attempt-1",
+    "workItemId": "work-item-2001",
+    "task": {
+      "action": "classify",
+      "input": "Classify the neutral sample request."
+    }
+  }
+}

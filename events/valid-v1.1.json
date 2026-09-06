@@ -1,0 +1,22 @@
+{
+  "specversion": "1.0",
+  "id": "event-1101",
+  "source": "urn:sample:planner",
+  "type": "com.example.agent.task.created",
+  "time": "2026-09-05T18:01:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "agent-task/1.1.0",
+  "subject": "task-1101",
+  "data": {
+    "schemaVersion": "1.1.0",
+    "correlationId": "conversation-9002",
+    "causationId": "request-8002",
+    "idempotencyKey": "task-1101-attempt-1",
+    "taskId": "task-1101",
+    "priority": "high",
+    "task": {
+      "action": "extract",
+      "input": "Extract the requested delivery date from the neutral sample text."
+    }
+  }
+}

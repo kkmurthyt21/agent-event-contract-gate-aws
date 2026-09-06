@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Agent event contract gate architecture on AWS</title>
+  <desc id="desc">A producer sends an event to a Lambda contract gate. Invalid events go to an SQS quarantine queue. Valid events reserve an idempotency key in DynamoDB and are published to EventBridge. EventBridge archives accepted events and invokes an executor Lambda, which records execution in DynamoDB. Delivery failures go to a separate SQS dead-letter queue.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .title { font: 700 38px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 20px Arial, sans-serif; fill: #475569; }
+      .node-title { font: 700 21px Arial, sans-serif; fill: #0f172a; }
+      .node-body { font: 400 17px Arial, sans-serif; fill: #334155; }
+      .label { font: 700 16px Arial, sans-serif; fill: #334155; }
+      .small { font: 400 15px Arial, sans-serif; fill: #475569; }
+      .box { stroke-width: 2; filter: url(#shadow); }
+      .line { stroke: #334155; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 10 8; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#f8fafc"/>
+  <text x="80" y="70" class="title">Versioned Agent Event Contract Gate</text>
+  <text x="80" y="108" class="subtitle">Validate first, deduplicate second, then publish to Amazon EventBridge</text>
+
+  <rect x="70" y="250" width="220" height="140" rx="18" fill="#ffffff" stroke="#64748b" class="box"/>
+  <text x="180" y="300" text-anchor="middle" class="node-title">Agent producer</text>
+  <text x="180" y="336" text-anchor="middle" class="node-body">CloudEvents-style</text>
+  <text x="180" y="365" text-anchor="middle" class="node-body">versioned message</text>
+
+  <rect x="370" y="220" width="270" height="200" rx="18" fill="#fff7ed" stroke="#f97316" class="box"/>
+  <text x="505" y="270" text-anchor="middle" class="node-title">Contract gate</text>
+  <text x="505" y="305" text-anchor="middle" class="node-body">AWS Lambda</text>
+  <text x="505" y="340" text-anchor="middle" class="node-body">Schema allowlist</text>
+  <text x="505" y="369" text-anchor="middle" class="node-body">JSON validation</text>
+  <text x="505" y="398" text-anchor="middle" class="node-body">Decision metrics</text>
+
+  <rect x="735" y="250" width="240" height="140" rx="18" fill="#eff6ff" stroke="#2563eb" class="box"/>
+  <text x="855" y="300" text-anchor="middle" class="node-title">Idempotency</text>
+  <text x="855" y="336" text-anchor="middle" class="node-body">Amazon DynamoDB</text>
+  <text x="855" y="365" text-anchor="middle" class="node-body">Conditional write + TTL</text>
+
+  <rect x="1070" y="250" width="230" height="140" rx="18" fill="#f5f3ff" stroke="#7c3aed" class="box"/>
+  <text x="1185" y="300" text-anchor="middle" class="node-title">Accepted events</text>
+  <text x="1185" y="336" text-anchor="middle" class="node-body">Amazon EventBridge</text>
+  <text x="1185" y="365" text-anchor="middle" class="node-body">Custom event bus</text>
+
+  <rect x="1375" y="250" width="180" height="140" rx="18" fill="#ecfdf5" stroke="#059669" class="box"/>
+  <text x="1465" y="300" text-anchor="middle" class="node-title">Executor</text>
+  <text x="1465" y="336" text-anchor="middle" class="node-body">AWS Lambda</text>
+  <text x="1465" y="365" text-anchor="middle" class="node-body">Runs once</text>
+
+  <path d="M 290 320 L 370 320" class="line"/>
+  <text x="330" y="300" text-anchor="middle" class="label">event</text>
+  <path d="M 640 320 L 735 320" class="line"/>
+  <text x="688" y="300" text-anchor="middle" class="label">valid</text>
+  <path d="M 975 320 L 1070 320" class="line"/>
+  <text x="1023" y="300" text-anchor="middle" class="label">first use</text>
+  <path d="M 1300 320 L 1375 320" class="line"/>
+  <text x="1338" y="300" text-anchor="middle" class="label">route</text>
+
+  <rect x="365" y="590" width="280" height="140" rx="18" fill="#fef2f2" stroke="#dc2626" class="box"/>
+  <text x="505" y="640" text-anchor="middle" class="node-title">Contract quarantine</text>
+  <text x="505" y="676" text-anchor="middle" class="node-body">Amazon SQS</text>
+  <text x="505" y="705" text-anchor="middle" class="node-body">Invalid or unsupported</text>
+
+  <rect x="735" y="590" width="240" height="140" rx="18" fill="#fffbeb" stroke="#d97706" class="box"/>
+  <text x="855" y="640" text-anchor="middle" class="node-title">Duplicate response</text>
+  <text x="855" y="676" text-anchor="middle" class="node-body">No republish</text>
+  <text x="855" y="705" text-anchor="middle" class="node-body">No second execution</text>
+
+  <rect x="1065" y="590" width="240" height="140" rx="18" fill="#f5f3ff" stroke="#7c3aed" class="box"/>
+  <text x="1185" y="640" text-anchor="middle" class="node-title">Event archive</text>
+  <text x="1185" y="676" text-anchor="middle" class="node-body">Accepted events only</text>
+  <text x="1185" y="705" text-anchor="middle" class="node-body">Seven-day retention</text>
+
+  <rect x="1360" y="590" width="210" height="140" rx="18" fill="#fef2f2" stroke="#dc2626" class="box"/>
+  <text x="1465" y="640" text-anchor="middle" class="node-title">Delivery DLQ</text>
+  <text x="1465" y="676" text-anchor="middle" class="node-body">Amazon SQS</text>
+  <text x="1465" y="705" text-anchor="middle" class="node-body">Routing failures</text>
+
+  <rect x="1375" y="785" width="180" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" class="box"/>
+  <text x="1465" y="825" text-anchor="middle" class="node-title">Execution log</text>
+  <text x="1465" y="852" text-anchor="middle" class="small">DynamoDB</text>
+
+  <path d="M 505 420 L 505 590" class="line"/>
+  <text x="520" y="510" class="label">invalid</text>
+  <path d="M 855 390 L 855 590" class="line"/>
+  <text x="870" y="510" class="label">duplicate</text>
+  <path d="M 1185 390 L 1185 590" class="line dashed"/>
+  <text x="1200" y="510" class="label">archive</text>
+  <path d="M 1465 390 L 1465 590" class="line dashed"/>
+  <text x="1445" y="510" text-anchor="end" class="label">delivery failure</text>
+  <path d="M 1510 390 C 1570 460 1580 740 1530 785" class="line"/>
+  <text x="1515" y="755" class="label">record</text>
+
+  <text x="80" y="830" class="subtitle">CloudWatch: AcceptedEvents · DuplicateEvents · RejectedEvents · PublishFailures</text>
+</svg>

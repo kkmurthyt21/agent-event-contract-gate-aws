@@ -1,0 +1,21 @@
+{
+  "specversion": "1.0",
+  "id": "event-1001",
+  "source": "urn:sample:planner",
+  "type": "com.example.agent.task.created",
+  "time": "2026-09-05T18:00:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "agent-task/1.0.0",
+  "subject": "task-1001",
+  "data": {
+    "schemaVersion": "1.0.0",
+    "correlationId": "conversation-9001",
+    "causationId": "request-8001",
+    "idempotencyKey": "task-1001-attempt-1",
+    "taskId": "task-1001",
+    "task": {
+      "action": "summarize",
+      "input": "Summarize the customer request without exposing personal information."
+    }
+  }
+}

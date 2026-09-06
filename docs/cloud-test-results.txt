@@ -1,0 +1,28 @@
+Agent Event Contract Gate - AWS Cloud Verification Summary
+
+Test date: September 5, 2026
+Region: us-east-1
+AWS CLI: 2.36.40
+AWS SAM CLI: 1.166.1
+Python: 3.12.10
+
+Valid v1 event:
+{"status": "ACCEPTED", "eventId": "event-1001"}
+
+Repeated event:
+{"status": "DUPLICATE", "eventId": "event-1001"}
+
+Unsupported v2 event:
+{"status": "REJECTED", "errors": ["Unsupported schemaVersion: '2.0.0'"]}
+
+Executor execution count: 1
+Quarantine queue messages: 1
+Delivery DLQ messages: 0
+
+Observed end-to-end Lambda durations:
+- First valid event: 3,563.92 ms (3,676 ms billed; 111.33 ms initialization)
+- Duplicate event: 359.82 ms (360 ms billed)
+- Rejected event: 330.58 ms (331 ms billed)
+
+This is a redacted summary of one cloud demonstration. It is not raw AWS log
+output or a performance benchmark.

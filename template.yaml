@@ -1,0 +1,189 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Versioned contract enforcement for event-driven agent messages.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    MemorySize: 256
+    Timeout: 15
+    Tags:
+      Project: agent-event-contract-gate
+
+Resources:
+  AgentEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub agent-contract-gate-${AWS::StackName}
+      Tags:
+        - Key: Project
+          Value: agent-event-contract-gate
+
+  AgentEventArchive:
+    Type: AWS::Events::Archive
+    Properties:
+      ArchiveName: !Sub agent-contract-gate-${AWS::StackName}
+      Description: Accepted agent events retained for controlled replay.
+      RetentionDays: 7
+      SourceArn: !GetAtt AgentEventBus.Arn
+
+  DedupeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: idempotencyKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: idempotencyKey
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: agent-event-contract-gate
+
+  ExecutionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: eventId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: eventId
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: agent-event-contract-gate
+
+  QuarantineQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 345600
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: Project
+          Value: agent-event-contract-gate
+
+  DeliveryDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 345600
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: Project
+          Value: agent-event-contract-gate
+
+  ContractGateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: gate/
+      Handler: app.lambda_handler
+      Description: Validates, deduplicates, and publishes agent events.
+      Environment:
+        Variables:
+          DEDUPE_TABLE: !Ref DedupeTable
+          QUARANTINE_QUEUE_URL: !Ref QuarantineQueue
+          EVENT_BUS_NAME: !Ref AgentEventBus
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DedupeTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt QuarantineQueue.QueueName
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref AgentEventBus
+        - CloudWatchPutMetricPolicy: {}
+
+  ExecutorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: executor/
+      Handler: app.lambda_handler
+      Description: Records accepted agent-task executions.
+      Environment:
+        Variables:
+          EXECUTION_TABLE: !Ref ExecutionTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExecutionTable
+
+  AcceptedEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: !Ref AgentEventBus
+      Description: Routes only accepted contract-gate events to the executor.
+      EventPattern:
+        source:
+          - sample.contract-gate
+        detail-type:
+          - AgentTaskAccepted
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ExecutorFunction.Arn
+          Id: ExecutorFunction
+          DeadLetterConfig:
+            Arn: !GetAtt DeliveryDeadLetterQueue.Arn
+          RetryPolicy:
+            MaximumEventAgeInSeconds: 3600
+            MaximumRetryAttempts: 2
+
+  ExecutorInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ExecutorFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AcceptedEventRule.Arn
+
+  DeliveryDeadLetterQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref DeliveryDeadLetterQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowEventBridgeDelivery
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt DeliveryDeadLetterQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt AcceptedEventRule.Arn
+
+  ContractGateLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ContractGateFunction}
+      RetentionInDays: 7
+
+  ExecutorLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ExecutorFunction}
+      RetentionInDays: 7
+
+Outputs:
+  ContractGateFunctionName:
+    Description: Invoke this Lambda function with the sample event files.
+    Value: !Ref ContractGateFunction
+  QuarantineQueueUrl:
+    Value: !Ref QuarantineQueue
+  DeliveryDeadLetterQueueUrl:
+    Value: !Ref DeliveryDeadLetterQueue
+  ExecutionTableName:
+    Value: !Ref ExecutionTable
+  DedupeTableName:
+    Value: !Ref DedupeTable
+  AgentEventBusName:
+    Value: !Ref AgentEventBus
+  AgentEventArchiveName:
+    Value: !Ref AgentEventArchive
